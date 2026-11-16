@@ -1,0 +1,471 @@
+[
+  {
+    "file": "bike_demand/data.py",
+    "old": "DROPPED = (\"instant\", \"atemp\", *LEAKS)",
+    "new": "DROPPED = (\"instant\", \"atemp\")",
+    "lane": "fast",
+    "why": "the rider counts stay in the table"
+  },
+  {
+    "file": "bike_demand/data.py",
+    "old": "frame[\"weathersit\"].clip(upper=max(WEATHER))",
+    "new": "frame[\"weathersit\"]",
+    "lane": "fast",
+    "why": "heavy weather is its own unseen group"
+  },
+  {
+    "file": "bike_demand/data.py",
+    "old": "humidity.interpolate(method=\"time\")",
+    "new": "humidity.interpolate()",
+    "lane": "fast",
+    "why": "the humidity gap ignores the time between rows"
+  },
+  {
+    "file": "bike_demand/data.py",
+    "old": "frame = frame.sort_values(\"time\", ignore_index=True)",
+    "new": "frame = frame.reset_index(drop=True)",
+    "lane": "fast",
+    "why": "rows keep the file order"
+  },
+  {
+    "file": "bike_demand/data.py",
+    "old": "return frame[\"dteday\"].nunique() * len(HOURS) - len(frame)",
+    "new": "return frame[\"dteday\"].nunique() * 23 - len(frame)",
+    "lane": "fast",
+    "why": "missing hours are miscounted"
+  },
+  {
+    "file": "bike_demand/data.py",
+    "old": "(log_count < low - IQR_FACTOR * spread)",
+    "new": "(log_count > low - IQR_FACTOR * spread)",
+    "lane": "fast",
+    "why": "every hour above the low fence counts as unusual"
+  },
+  {
+    "file": "bike_demand/data.py",
+    "old": "(frame[\"mnth\"].to_numpy() - 1) / 12",
+    "new": "(frame[\"mnth\"].to_numpy() - 1) / 6",
+    "lane": "fast",
+    "why": "the months go round twice a year"
+  },
+  {
+    "file": "bike_demand/data.py",
+    "old": "frame[[\"holiday\"]].to_numpy(), ",
+    "new": "",
+    "lane": "fast",
+    "why": "the holiday leaves the state"
+  },
+  {
+    "file": "bike_demand/data.py",
+    "old": "np.clip(np.expm1(scaled_prediction * self.target_std + self.target_mean), 0, None)",
+    "new": "np.expm1(scaled_prediction * self.target_std + self.target_mean)",
+    "lane": "fast",
+    "why": "a prediction can be a negative count"
+  },
+  {
+    "file": "bike_demand/data.py",
+    "old": "scaling = Scaling.fit(parts[\"train\"])",
+    "new": "scaling = Scaling.fit(pd.concat(list(parts.values())))",
+    "lane": "fast",
+    "why": "scaling sees the test months"
+  },
+  {
+    "file": "bike_demand/data.py",
+    "old": "pd.concat([parts[\"train\"], parts[\"validation\"]], ignore_index=True)",
+    "new": "pd.concat([parts[\"train\"], parts[\"validation\"], parts[\"test\"]], ignore_index=True)",
+    "lane": "fast",
+    "why": "the refit trains on the test months"
+  },
+  {
+    "file": "bike_demand/models.py",
+    "old": "h * (1 + self.gamma(s))",
+    "new": "h",
+    "lane": "fast",
+    "why": "FiLM stops scaling"
+  },
+  {
+    "file": "bike_demand/models.py",
+    "old": "nn.init.zeros_(layer.weight)",
+    "new": "pass",
+    "lane": "fast",
+    "why": "the modulated networks do not start as the plain one"
+  },
+  {
+    "file": "bike_demand/models.py",
+    "old": "torch.cat([x, s], dim=1) if self.kind == \"concat\" else x",
+    "new": "x",
+    "lane": "fast",
+    "why": "concat never sees the state"
+  },
+  {
+    "file": "bike_demand/models.py",
+    "old": "            if self.modulation is not None:",
+    "new": "            if self.modulation is not None and i == 0:",
+    "lane": "fast",
+    "why": "only the first layer is modulated"
+  },
+  {
+    "file": "bike_demand/models.py",
+    "old": "key=lambda width: abs(count(width) - target)",
+    "new": "key=lambda width: count(width)",
+    "lane": "fast",
+    "why": "sizes are not matched"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "\"bias\": float(np.mean(error))",
+    "new": "\"bias\": float(np.mean(-error))",
+    "lane": "fast",
+    "why": "the bias sign flips"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "\"r2\": float(1 - np.sum(error ** 2)",
+    "new": "\"r2\": float(np.sum(error ** 2)",
+    "lane": "fast",
+    "why": "R2 is the unexplained share"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "torch.clamp(prediction * scaling.target_std + scaling.target_mean, min=0)",
+    "new": "prediction * scaling.target_std + scaling.target_mean",
+    "lane": "fast",
+    "why": "the training score forgets that counts stop at 0"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "    model.load_state_dict(best_state)\n",
+    "new": "",
+    "lane": "fast",
+    "why": "early stopping keeps the last epoch"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "elif epoch - best_epoch >= patience:",
+    "new": "elif epoch - best_epoch > patience:",
+    "lane": "fast",
+    "why": "patience runs one epoch long"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "for _ in range(epochs)]",
+    "new": "for _ in range(epochs - 1)]",
+    "lane": "fast",
+    "why": "the refit trains one epoch short"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "    torch.manual_seed(seed)\n",
+    "new": "",
+    "lane": "fast",
+    "why": "a seed no longer fixes the start"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "config = min(table, key=lambda c: table[c][0])",
+    "new": "config = max(table, key=lambda c: table[c][0])",
+    "lane": "fast",
+    "why": "tuning keeps the worst setting"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "r.best_epoch + 1 for r in runs",
+    "new": "r.best_epoch for r in runs",
+    "lane": "fast",
+    "why": "the refit epoch count is one short"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "seed_weights = rng.multinomial(seeds, np.full(seeds, 1 / seeds), size=reps)",
+    "new": "seed_weights = np.ones((reps, seeds))",
+    "lane": "fast",
+    "why": "the bootstrap trusts every seed"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "day_weights = rng.multinomial(day_count, np.full(day_count, 1 / day_count), size=reps).T",
+    "new": "day_weights = np.ones((day_count, reps))",
+    "lane": "fast",
+    "why": "the bootstrap trusts every test day"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "point = float(np.sqrt(per_day[0].sum(1) / hours.sum()).mean() - np.sqrt(per_day[1].sum(1) / hours.sum()).mean())",
+    "new": "point = float(np.sqrt(per_day[1].sum(1) / hours.sum()).mean() - np.sqrt(per_day[0].sum(1) / hours.sum()).mean())",
+    "lane": "fast",
+    "why": "the difference is read backwards"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "stats.t.ppf(0.975,",
+    "new": "stats.t.ppf(0.95,",
+    "lane": "fast",
+    "why": "the seed interval is a 90% one"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "\"std\": float(np.std([r[key] for r in runs], ddof=1))",
+    "new": "\"std\": float(np.std([r[key] for r in runs]))",
+    "lane": "fast",
+    "why": "the seed spread is the population spread"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "if result[\"high\"] < 0:",
+    "new": "if result[\"high\"] > 0:",
+    "lane": "fast",
+    "why": "the verdict says better when it is not"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "return (\"+\" if value > 0 else \"-\") + text",
+    "new": "return (\"-\" if value > 0 else \"+\") + text",
+    "lane": "fast",
+    "why": "signs flip"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "escaped = NUMBER_AND_WORD.sub(\"\\\\1&nbsp;\", html.escape(text, quote=False))",
+    "new": "escaped = html.escape(text, quote=False)",
+    "lane": "fast",
+    "why": "a number can end a line without its word"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "return HYPHENATED.sub(lambda m: f'<span class=\"nw\">{m.group(0)}</span>', escaped)",
+    "new": "return escaped",
+    "lane": "fast",
+    "why": "a hyphenated word can break"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "\"/<wbr>\".join(segments)",
+    "new": "\"/\".join(segments)",
+    "lane": "fast",
+    "why": "a long address has no break points"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "table.sort_values(\"share\", ascending=False).head(count)",
+    "new": "table.sort_values(\"share\", ascending=True).head(count)",
+    "lane": "fast",
+    "why": "the worst days are the best days"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "if primary[\"high\"] < 0:",
+    "new": "if primary[\"low\"] < 0:",
+    "lane": "fast",
+    "why": "the conclusion claims support without it"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "predictions.loc[chosen, name].sum() / predictions.loc[chosen, \"cnt\"].sum()",
+    "new": "predictions.loc[chosen, \"cnt\"].sum() / predictions.loc[chosen, name].sum()",
+    "lane": "fast",
+    "why": "the day ratio is upside down"
+  },
+  {
+    "file": "tools/figures.py",
+    "old": "return min(ORDER, key=lambda name: min(metrics[\"tuning\"][name].values()))",
+    "new": "return max(ORDER, key=lambda name: min(metrics[\"tuning\"][name].values()))",
+    "lane": "fast",
+    "why": "the worst model is called best"
+  },
+  {
+    "file": "tools/figures.py",
+    "old": "return predictions.set_index(\"time\").reindex(every)",
+    "new": "return predictions.set_index(\"time\")",
+    "lane": "fast",
+    "why": "the plot bridges the hours with no record"
+  },
+  {
+    "file": "tools/figures.py",
+    "old": "text.replace(\",\", \"\\x00\").replace(\".\", \",\").replace(\"\\x00\", \".\")",
+    "new": "text",
+    "lane": "fast",
+    "why": "numbers print in English"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "[r.history for r in runs])",
+    "new": "[runs[0].history])",
+    "lane": "fast",
+    "why": "only the first tuning seed's history is kept"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "torch.Generator().manual_seed(seed)",
+    "new": "torch.Generator().manual_seed(seed + len(kind))",
+    "lane": "fast",
+    "why": "each kind of network gets its own batch order"
+  },
+  {
+    "file": "bike_demand/train.py",
+    "old": "draws = rmsle(per_day[0]) - rmsle(per_day[1])",
+    "new": "draws = rmsle(per_day[0]) - rmsle(per_day[1][:, ::-1])",
+    "lane": "fast",
+    "why": "the bootstrap draws different days for the two models"
+  },
+  {
+    "file": "tools/figures.py",
+    "old": "set_limits(*limits)",
+    "new": "None",
+    "lane": "fast",
+    "why": "relabelled ticks widen the axis"
+  },
+  {
+    "file": "tools/figures.py",
+    "old": "number(float(text), len(text.partition(\".\")[2]))",
+    "new": "text",
+    "lane": "fast",
+    "why": "tick numbers keep the dot"
+  },
+  {
+    "file": "tools/figures.py",
+    "old": "    turkish_ticks(figure)\n",
+    "new": "",
+    "lane": "fast",
+    "why": "saved figures keep the English tick format"
+  },
+  {
+    "file": "tools/figures.py",
+    "old": "(ticker.ScalarFormatter, ticker.FuncFormatter, ticker.LogFormatter)",
+    "new": "(ticker.ScalarFormatter, ticker.LogFormatter)",
+    "lane": "fast",
+    "why": "the log axis keeps the dot"
+  },
+  {
+    "file": "tools/figures.py",
+    "old": "if not isinstance(axis.get_major_formatter(),",
+    "new": "if False and not isinstance(axis.get_major_formatter(),",
+    "lane": "fast",
+    "why": "dates are rewritten like numbers"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "escaped = LAST_SPACE.sub(\"&nbsp;\", escaped)",
+    "new": "escaped = escaped",
+    "lane": "fast",
+    "why": "a paragraph can end on a lone word"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "f'<span class=\"nw\">{part}</span>' if \"-\" in part else part",
+    "new": "part",
+    "lane": "fast",
+    "why": "an address can break at a hyphen"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "(levels[\"temp\"] > 1)",
+    "new": "(levels[\"temp\"] >= 1)",
+    "lane": "fast",
+    "why": "a day with no change at all counts as stuck"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "below = log_count < log_count",
+    "new": "below = log_count > log_count",
+    "lane": "fast",
+    "why": "the high side is counted as low"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "flags & first_year & (frame[\"mnth\"] == 1)",
+    "new": "flags & (frame[\"mnth\"] == 1)",
+    "lane": "fast",
+    "why": "every January counts as 2011"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "top = squared.nlargest(count).index.sort_values()",
+    "new": "top = squared.nlargest(count).index",
+    "lane": "fast",
+    "why": "the worst hours come out of time order"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "(frame[\"time\"] < pd.Timestamp(data.SPLITS[\"test\"][0])) & (frame[\"holiday\"] == 1)",
+    "new": "(frame[\"holiday\"] == 1)",
+    "lane": "fast",
+    "why": "the test-month holidays leak into the learned range"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "rows.assign(hum=typical)",
+    "new": "rows",
+    "lane": "fast",
+    "why": "the counterfactual changes nothing"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "test farkı {interval(versus)}",
+    "new": "test farkı",
+    "lane": "fast",
+    "why": "the conclusion crowns a model without its interval"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "wet_hour = frame[\"weathersit\"] == max(data.WEATHER)",
+    "new": "wet_hour = frame[\"weathersit\"] == 2",
+    "lane": "fast",
+    "why": "mist counts as rain"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "return order.index(pd.Timestamp(day)) + 1",
+    "new": "return order.index(pd.Timestamp(day))",
+    "lane": "fast",
+    "why": "day ranks start at zero"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "difference = f\"RMSLE farkı {interval(primary)}\"",
+    "new": "difference = \"RMSLE farkı\"",
+    "lane": "fast",
+    "why": "the conclusion drops the interval"
+  },
+  {
+    "file": "tools/rebuild.py",
+    "old": "cwd=ROOT, check=True)",
+    "new": "cwd=ROOT)",
+    "lane": "fast",
+    "why": "the rebuild goes on after a failed step"
+  },
+  {
+    "file": "tools/rebuild.py",
+    "old": "(\"tools/figures.py\",)",
+    "new": "(\"tools/figure.py\",)",
+    "lane": "fast",
+    "why": "a rebuild step names a missing script"
+  },
+  {
+    "file": "tools/rebuild.py",
+    "old": "cwd=ROOT,",
+    "new": "",
+    "lane": "fast",
+    "why": "the rebuild runs from wherever it was started"
+  },
+  {
+    "file": "tools/render.py",
+    "old": "if (el.scrollHeight > el.clientHeight + 1)",
+    "new": "if (false)",
+    "lane": "edge",
+    "why": "an overflowing page passes"
+  },
+  {
+    "file": "tools/render.py",
+    "old": "if (lines > Number(el.dataset.maxLines))",
+    "new": "if (false)",
+    "lane": "edge",
+    "why": "a wrapped headline passes"
+  },
+  {
+    "file": "tools/render.py",
+    "old": "if (!image.naturalWidth)",
+    "new": "if (false)",
+    "lane": "edge",
+    "why": "a missing figure passes"
+  }
+]

@@ -1,0 +1,13 @@
+numpy==2.4.1
+pandas==3.0.6
+scipy==1.17.0
+scikit-learn==1.8.0
+matplotlib==3.11.2
+# The GPU build used for the results: pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cu128
+torch==2.10.0
+# report, notebook and the tests that read them
+PyMuPDF==1.27.2.2
+Pillow==12.2.0
+nbformat==5.11.1
+nbclient==0.11.0
+ipykernel==7.4.0

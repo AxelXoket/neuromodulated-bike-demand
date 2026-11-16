@@ -1,0 +1,8 @@
+* text=auto eol=lf
+# The UCI file is kept exactly as published, CRLF line endings included.
+data/hour.csv -text
+*.png binary
+*.mp3 binary
+*.mp4 binary
+*.pdf binary
+*.xlsx binary
