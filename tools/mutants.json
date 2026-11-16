@@ -371,6 +371,27 @@
     "why": "the right panel of figure 2 has no y label"
   },
   {
+    "file": "tools/figures.py",
+    "old": "FONT_SIZE, NOTE_SIZE = 10.5, 9.5",
+    "new": "FONT_SIZE, NOTE_SIZE = 9, 9.5",
+    "lane": "fast",
+    "why": "wide figures print their text below 8 pt"
+  },
+  {
+    "file": "tools/figures.py",
+    "old": "FONT_SIZE, NOTE_SIZE = 10.5, 9.5",
+    "new": "FONT_SIZE, NOTE_SIZE = 10.5, 8",
+    "lane": "fast",
+    "why": "figure notes print below 7 pt"
+  },
+  {
+    "file": "tools/figures.py",
+    "old": "\"font.size\": FONT_SIZE,",
+    "new": "\"font.size\": 9,",
+    "lane": "fast",
+    "why": "the figures ignore the chosen text size"
+  },
+  {
     "file": "tools/build_report.py",
     "old": "rank = min(day_rank(predictions, kind, HUMID_SATURDAY) for kind in nets)",
     "new": "rank = max(day_rank(predictions, kind, HUMID_SATURDAY) for kind in nets)",

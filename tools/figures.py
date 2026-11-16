@@ -35,6 +35,8 @@ EVENTS = (("2012-10-29", "Sandy kasırgası", ("2012-10-16", 1500)), ("2012-12-2
 NUMERIC_LABEL = re.compile(r"-?\d+(?:\.\d+)?")
 MINUS_SIGN = chr(0x2212)  # matplotlib prints negative ticks with the minus sign, not a hyphen
 
+# Wide figures print at about 0.76 of their size: 10.5 pt prints at 8 pt, about the size of the captions.
+FONT_SIZE, NOTE_SIZE = 10.5, 9.5
 PREFERRED_FONT, FALLBACK_FONT = "Segoe UI", "DejaVu Sans"  # matplotlib ships DejaVu Sans; Colab has no Segoe UI
 
 
@@ -43,7 +45,7 @@ def font_family(installed: set[str]) -> list[str]:
     return [PREFERRED_FONT, FALLBACK_FONT] if PREFERRED_FONT in installed else [FALLBACK_FONT]
 
 
-plt.rcParams.update({"font.family": font_family({font.name for font in font_manager.fontManager.ttflist}), "font.size": 9,
+plt.rcParams.update({"font.family": font_family({font.name for font in font_manager.fontManager.ttflist}), "font.size": FONT_SIZE,
                      "axes.edgecolor": MUTED, "axes.labelcolor": INK,
                      "xtick.color": MUTED, "ytick.color": MUTED, "axes.spines.top": False, "axes.spines.right": False,
                      "axes.grid": True, "grid.color": GRID, "grid.linewidth": 0.6, "legend.frameon": False})
@@ -109,11 +111,11 @@ def daily_series(frame: pd.DataFrame) -> pathlib.Path:
     for name, (first, last) in data.SPLITS.items():
         label, colour = shades[name]
         ax.axvspan(pd.Timestamp(first), pd.Timestamp(last) + pd.Timedelta(days=1), color=colour, lw=0)
-        ax.text(pd.Timestamp(first) + pd.Timedelta(days=6), daily.max() * 1.02, label, color=MUTED, fontsize=8, va="bottom")
+        ax.text(pd.Timestamp(first) + pd.Timedelta(days=6), daily.max() * 1.02, label, color=MUTED, fontsize=NOTE_SIZE, va="bottom")
     ax.plot(daily.index, daily.to_numpy(), color=INK, lw=0.8)
     for day, label, (label_day, label_y) in EVENTS:
         when = pd.Timestamp(day)
-        ax.annotate(label, (when, daily[when]), xytext=(pd.Timestamp(label_day), label_y), fontsize=8, color=INK,
+        ax.annotate(label, (when, daily[when]), xytext=(pd.Timestamp(label_day), label_y), fontsize=NOTE_SIZE, color=INK,
                     va="center", ha="right", arrowprops={"arrowstyle": "-", "color": MUTED, "lw": 0.6, "shrinkA": 2, "shrinkB": 1})
     ax.set(ylabel="Günlük kiralama", ylim=(0, daily.max() * 1.12))
     ax.margins(x=0.005)
@@ -158,7 +160,7 @@ def comparison(metrics: dict) -> pathlib.Path:
                 runs = [r[key] for r in metrics["test_runs"][name]]
                 ax.scatter(runs, [i] * len(runs), s=5, color=INK, zorder=3)
                 value = max(value, max(runs))
-            ax.text(value + pad, i, number(mean_of(metrics["test"][name][key]), decimals), va="center", fontsize=8, color=INK)
+            ax.text(value + pad, i, number(mean_of(metrics["test"][name][key]), decimals), va="center", fontsize=NOTE_SIZE, color=INK)
         ax.set(xlabel=title)
         ax.grid(axis="y", visible=False)
     axes[0].set(yticks=range(len(ORDER)), yticklabels=[LABELS[n] for n in ORDER])
@@ -214,7 +216,7 @@ def actual_vs_predicted(predictions: pd.DataFrame, best: str) -> pathlib.Path:
                 label=LABELS[name] + ("" if name in ("ridge", "hgb") else " (10 seed ortalaması)"))
     empty = window.index[window["cnt"].isna()]
     ax.axvspan(empty.min(), empty.max() + pd.Timedelta(hours=1), color="#FCE7F3", lw=0)
-    ax.text(empty.min() + pd.Timedelta(hours=2), window["cnt"].max() * 0.9, "Sandy:\nkayıt yok", fontsize=8, color=INK)
+    ax.text(empty.min() + pd.Timedelta(hours=2), window["cnt"].max() * 0.9, "Sandy:\nkayıt yok", fontsize=NOTE_SIZE, color=INK)
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=2))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%d.%m"))
     ax.set(ylabel="Kiralama/saat")
@@ -256,7 +258,7 @@ def state_profiles(metrics: dict) -> pathlib.Path:
             colour, line = styles[label]
             ax.plot(data.HOURS, values, color=colour, ls=line, lw=1.5, label=label)
         ax.set(title=LABELS[kind], xlabel="Saat", xticks=range(0, 24, 3))
-        ax.title.set_fontsize(9)
+        ax.title.set_fontsize(FONT_SIZE)
     axes[0].set(ylabel="Tahmin (kiralama/saat)")
     figure.legend(*axes[1].get_legend_handles_labels(), loc="lower center", bbox_to_anchor=(0.5, 1.0), ncols=4)
     figure.tight_layout()

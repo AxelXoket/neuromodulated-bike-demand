@@ -90,6 +90,21 @@ class TheReport(unittest.TestCase):
         ranks = [build_report.day_rank(predictions, kind, build_report.HUMID_SATURDAY) for kind in ("concat", "shift", "film")]
         self.assertEqual(min(ranks), ahead + 1)
 
+    def test_figure_text_prints_at_least_8_pt_and_notes_at_least_7(self):
+        import matplotlib.pyplot as plt
+
+        import figures
+        scales = []
+        with fitz.open(PDF) as doc:
+            for page in doc:
+                for image in page.get_image_info():
+                    printed_width = image["bbox"][2] - image["bbox"][0]
+                    scales.append(printed_width / (image["width"] / figures.DPI * 72))
+        self.assertEqual(len(scales), 9)
+        self.assertEqual(plt.rcParams["font.size"], figures.FONT_SIZE)
+        self.assertGreaterEqual(figures.FONT_SIZE * min(scales), 8.0)
+        self.assertGreaterEqual(figures.NOTE_SIZE * min(scales), 7.0)
+
     def test_no_paragraph_ends_on_a_line_with_a_single_word(self):
         """A paragraph here is a block whose lines sit one under another from the same left edge; cells side by side in
         a table row are not one."""
