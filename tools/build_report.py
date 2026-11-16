@@ -235,6 +235,14 @@ def weather_rmsle(predictions: pd.DataFrame, weather: pd.Series, name: str) -> d
     return {int(w): float(np.sqrt(squared[weather.to_numpy() == w].mean())) for w in data.WEATHER}
 
 
+def humid_rank(predictions: pd.DataFrame, nets: list[str]) -> int:
+    """The humid Saturday's best place among the worst days of the given nets; the text says how many days come first."""
+    rank = min(day_rank(predictions, kind, HUMID_SATURDAY) for kind in nets)
+    if rank < 2:
+        raise SystemExit(f"{HUMID_SATURDAY} is a net's worst day; the sentence about it no longer holds")
+    return rank
+
+
 def result_facts(metrics: dict, predictions: pd.DataFrame) -> dict:
     best = best_on_validation(metrics)
     test_frame = data.split(data.load())["test"]
@@ -261,7 +269,8 @@ def result_facts(metrics: dict, predictions: pd.DataFrame) -> dict:
         "thanksgiving_working": bool(working_days.get(pd.Timestamp(AFTER_THANKSGIVING)) == 1),
         "thanksgiving_share": {name: share_of_days(predictions, name, [AFTER_THANKSGIVING]) for name in (best, "film")},
         "humid_saturday_ratio": day_ratio(predictions, best, HUMID_SATURDAY),
-        "humid_saturday_net_rank": min(day_rank(predictions, kind, HUMID_SATURDAY) for kind in stateful),
+        "humid_saturday_net_rank": humid_rank(predictions, stateful),
+        "leave_share": share_of_days(predictions, best, [CHRISTMAS[0], AFTER_THANKSGIVING]),
         "after_sandy_ratio": day_ratio(predictions, best, SANDY[1]),
         "all_low": all(value < 0 for value in biases.values()),
         "lowest_month": int(min(monthly, key=monthly.get)),
@@ -344,7 +353,7 @@ def models_table(metrics: dict) -> str:
                    f"<td class='n'>{number(metrics['chosen'][k]['weight_decay'], 2)}</td><td class='n'>{metrics['chosen'][k]['epochs']}</td></tr>"
                    for k in models.KINDS)
     return ('<table><tr><th>Ağ</th><th>Durum nasıl giriyor</th><th class="n">Genişlik</th><th class="n">Parametre</th>'
-            f'<th class="n">lr</th><th class="n">wd</th><th class="n">Epoch</th></tr>{rows}</table>')
+            f'<th class="n">Öğrenme hızı</th><th class="n">Weight decay</th><th class="n">Epoch</th></tr>{rows}</table>')
 
 
 def worst_table(predictions: pd.DataFrame, name: str) -> str:
@@ -363,15 +372,15 @@ def worst_table(predictions: pd.DataFrame, name: str) -> str:
 def conclusion(primary: dict, best: str, versus: dict | None = None) -> str:
     difference = f"RMSLE farkı {interval(primary)}"
     if primary["high"] < 0:
-        claim = f"FiLM, durumu girdiye eklemekten iyi çıktı ({difference}); aralık tamamen sıfırın altında. Hipotezim bu veride destek buldu."
+        claim = f"FiLM, durumu girdiye ekleyen ağdan iyi çıktı ({difference}); aralık tamamen sıfırın altında. Hipotezim bu veride destek buldu."
     elif primary["low"] > 0:
-        claim = f"FiLM, durumu girdiye eklemekten kötü çıktı ({difference}); aralık tamamen sıfırın üstünde. Hipotezim bu veride çürüdü."
+        claim = f"FiLM, durumu girdiye ekleyen ağdan kötü çıktı ({difference}); aralık tamamen sıfırın üstünde. Hipotezim bu veride çürüdü."
     else:
-        claim = (f"FiLM ile durumu girdiye eklemek ayırt edilemiyor ({difference}; aralık sıfırı içeriyor). Hipotezim bu veri ve "
+        claim = (f"FiLM ile durumu girdiye ekleyen ağ ayırt edilemiyor ({difference}; aralık sıfırı içeriyor). Hipotezim bu veri ve "
                  "bu boyutta desteklenmedi; bunu da bir sonuç sayıyorum.")
     if versus is None:
         return f"{claim} Doğrulamada en iyi model {LABELS[best]}."
-    return (f"{claim} Doğrulamada en iyi model {LABELS[best]}; {LABELS['concat']} ağıyla test farkı {interval(versus)}. "
+    return (f"{claim} Doğrulamada en iyi model {LABELS[best]}; durumu girdiye ekleyen ağla test farkı {interval(versus)}. "
             f"{verdict(best, 'concat', versus)}")
 
 
@@ -431,7 +440,7 @@ Kaynak: {link(data.SOURCE_URL)}. {e("Atıf: " + CITATION + ".")}</p>
 <h3>Ön işleme adımları</h3>{bullets(preprocessing)}
 <h2>4. Model ve yöntem</h2>
 <p>{e("İki klasik model karşılaştırma tabanı: Ridge (doğrusal, one-hot girdiler) ve Gradient boosting (HistGradientBoostingRegressor; aynı bilgiyi ham tablo olarak okur). Dört sinir ağı yalnız günün durumunun ağa nasıl girdiğinde ayrılıyor. Hepsi iki gizli katmanlı (ReLU) ve tek çıkışlı; parametre sayıları %1 içinde eşit, böylece fark büyüklükten değil yapıdan gelir.")}</p>
-<p>{e(f"Boyutu ayarlamadım, baştan seçtim ({LABELS['concat']} ağında genişlik {models.REFERENCE_WIDTH}). Gecikmeli değerleri ve dizi modellerini bilerek kullanmadım: önceki saatlerin sayısı günün durumunu dolaylı olarak taşır ve aranan farkı örter.")}</p>
+<p>{e(f"Boyutu ayarlamadım, baştan seçtim: durumu girdiye ekleyen ağın genişliği {models.REFERENCE_WIDTH}. Gecikmeli değerleri ve dizi modellerini bilerek kullanmadım: önceki saatlerin sayısı günün durumunu dolaylı olarak taşır ve aranan farkı örter.")}</p>
 <p class="formula">h = ReLU((W·x + b) ⊙ (1 + A·s) + B·s)</p>
 <p>{e("FiLM'de durum s girdiye eklenmiyor; her gizli birimi 1 + A·s ile ölçekliyor ve B·s ile kaydırıyor. A ve B sıfırdan başlıyor, yani FiLM ağı durumsuz ağ olarak doğuyor. Yalnız kaydırma ağı ölçeklemeyi atıyor (yalnız + B·s): FiLM onu geçerse kazanç çarpımsal kısımdan gelmiş demektir.")}</p>
 {models_table(metrics)}"""
@@ -442,20 +451,20 @@ Kaynak: {link(data.SOURCE_URL)}. {e("Atıf: " + CITATION + ".")}</p>
     p3 = f"""
 <h2>5. Eğitim süreci</h2>
 {bullets([
-        e(f"Kayıp: log ölçeğinde MSE; optimizer AdamW; batch {train.BATCH}. Izgara: öğrenme hızı {' ve '.join(number(v, 3) for v in lrs)}, weight decay {' ve '.join(number(v, 2) for v in decays)}; her ayar {len(metrics['tuning_seeds'])} seed ile denendi (ağ başına aynı bütçe)."),
-        e(f"Erken durdurma: doğrulama RMSLE'si {train.PATIENCE} epoch iyileşmezse durur, en iyi epoch'un ağırlıkları geri yüklenir. Seçilen epoch sayısı, ayar seed'lerinin ortalama en iyi epoch'u."),
+        e(f"Kayıp: log ölçeğinde MSE; optimizer AdamW; batch {train.BATCH}. Izgara: öğrenme hızı {' ve '.join(number(v, 3) for v in lrs)}, weight decay {' ve '.join(number(v, 2) for v in decays)}; her ayar {len(metrics['tuning_seeds'])} seed (rastgeleliği sabitleyen sayı) ile denendi, ağ başına aynı bütçe."),
+        e(f"Erken durdurma: doğrulama RMSLE'si {train.PATIENCE} epoch boyunca (epoch: eğitim verisinin tamamından bir geçiş) iyileşmezse durur, en iyi epoch'un ağırlıkları geri yüklenir. Seçilen epoch sayısı, ayar seed'lerinin ortalama en iyi epoch'u."),
         e(f"Son modeller eğitim ve doğrulama aylarıyla ({number(metrics['rows']['fit'])} saat) seçilen epoch kadar yeniden eğitildi; {len(metrics['final_seeds'])} farklı seed, ayar seed'lerinden ayrı. Her seed'de batch sırası bütün ağlar için aynı."),
         e(f"Gradient boosting: öğrenme hızı {' ve '.join(number(v, 2) for v in sorted({lr for lr, _ in train.HGB_GRID}))}, yaprak {' ve '.join(str(v) for v in sorted({n for _, n in train.HGB_GRID}))}; tur sayısı da doğrulamada seçildi ({hgb_choice['rounds']} tur, {number(hgb_choice['learning_rate'], 2)}, {hgb_choice['max_leaf_nodes']} yaprak). Ridge'de alfa {'; '.join(number(a, 1) for a in train.RIDGE_ALPHAS)} arasından {number(metrics['chosen']['ridge']['alpha'], 1)}."),
         e(f"Donanım: {metrics['device']}, PyTorch {metrics['torch'].split('+')[0]}; bütün deney {number(metrics['seconds'])} sn. Seed'ler sabit, sonuçlar aynı komutla yeniden üretiliyor."),
     ])}
 {figure("sonuc_ogrenme", f"Şekil 5. Seçilen ayarla {len(metrics['tuning_seeds'])} ayar seed'inin ortalama eğitim kaybı ve doğrulama RMSLE'si; bant seed'lerin aralığı, nokta seçilen epoch sayısı.")}
-<p>{e(f"Şekil 5: doğrulama hatası ilk epoch'larda dibe iniyor, sonra eğitim kaybı inmeye devam ederken yerinde sayıp dalgalanıyor. Olası bir neden: doğrulama ayları eğitim aylarından çok daha yoğun (saat ortalaması {number(f['level']['validation'])}, eğitimde {number(f['level']['train'])}). En iyi epoch erken geldiği için erken durdurma belirleyici. Durumsuz ağın doğrulama hatası {number(r['no_state_curve'][0], 2)} değerine inip sonra {number(r['no_state_curve'][1], 2)} değerine çıkıyor; günün türünü bilmeden iş günü ile hafta sonu eğrisini ayıramıyor.")}</p>
+<p>{e(f"Şekil 5: doğrulama hatası ilk epoch'larda dibe iniyor, sonra eğitim kaybı inmeye devam ederken yerinde sayıp dalgalanıyor. Olası bir neden: doğrulama ayları eğitim aylarından çok daha yoğun (saat ortalaması {number(f['level']['validation'])}, eğitimde {number(f['level']['train'])}). En iyi epoch erken geldiği için erken durdurma belirleyici. Durumsuz ağın ortalama doğrulama eğrisi {number(r['no_state_curve'][0], 2)} değerine inip sonra {number(r['no_state_curve'][1], 2)} değerine çıkıyor; ağ günün türünü bilmediği için iş günü ile hafta sonu eğrilerini ayıramıyor olabilir.")}</p>
 <h2>6. Değerlendirme sonuçları</h2>
 {results_table(metrics, best)}
 <p class="note">{e(f"Test: {test_span}. Ağlarda {len(metrics['final_seeds'])} seed ortalaması ± standart sapma. Sapma: ortalama (tahmin - gerçek); eksi, modelin az tahmin ettiğini gösterir. Kalın satır doğrulamada en iyi model.")}</p>
 {figure("sonuc_karsilastirma", "Şekil 6. Test RMSLE ve RMSE; noktalar tek tek seed'ler.")}
 <p>{e(f"Doğrulamada en iyi model {LABELS[best]}" + (", testte de en düşük RMSLE onun" if r['best_on_test'] == best else f"; testte en düşük RMSLE ise {LABELS[r['best_on_test']]}") + f": RMSLE {number(mean_of(test[best]['rmsle']), 3)}, RMSE {number(mean_of(test[best]['rmse']), 1)}, R² {number(mean_of(test[best]['r2']), 3)}. Durumu kullanan üç ağın RMSLE'si {number(min(stateful_rmsle), 3)} ile {number(max(stateful_rmsle), 3)} arasında.")}</p>
-<p>{e(f"Farkları seed ve test günleri üzerinden iki seviyeli eşleştirilmiş bootstrap ile ölçtüm (köşeli parantez %95 aralık; {number(train.BOOTSTRAP_REPS)} tekrar; her turda seed'ler ve {f['test_days']} test günü yeniden çekiliyor, iki model için aynı). FiLM eksi durum girdide: {interval(primary)}. {verdict('film', 'concat', primary)} FiLM eksi yalnız kaydırma: {interval(comparisons['film - shift']['bootstrap'])}. Durumun kendisi ise büyük fark yaratıyor: durum girdide eksi durumsuz {interval(comparisons['concat - no-state']['bootstrap'])}. {LABELS['hgb']} eksi durum girdide {interval(comparisons['hgb - concat']['bootstrap'])}: {verdict('hgb', 'concat', comparisons['hgb - concat']['bootstrap'])}")}</p>"""
+<p>{e(f"Farkları seed ve test günleri üzerinden iki seviyeli eşleştirilmiş bootstrap ile ölçtüm (köşeli parantez %95 aralık; {number(train.BOOTSTRAP_REPS)} tekrar; her turda seed'ler ve {f['test_days']} test günü yeniden çekiliyor, iki model için aynı). FiLM eksi durum girdide: {interval(primary)}. {verdict('film', 'concat', primary)} FiLM eksi yalnız kaydırma: {interval(comparisons['film - shift']['bootstrap'])}. Durumun kendisi ise büyük fark yaratıyor: durum girdide eksi durumsuz {interval(comparisons['concat - no-state']['bootstrap'])}. {LABELS['hgb']} eksi durum girdide {interval(comparisons['hgb - concat']['bootstrap'])}.")}</p>"""
 
     best_label = LABELS[best]
     sandy_first, sandy_second = f["sandy_hours"]
@@ -467,7 +476,7 @@ Kaynak: {link(data.SOURCE_URL)}. {e("Atıf: " + CITATION + ".")}</p>
                     f"bu gün {LABELS['film']} hatasının {pct(r['thanksgiving_share']['film'], 1)} payını, {best_label} hatasının "
                     f"{pct(r['thanksgiving_share'][best], 1)} payını taşıyor.") if r["thanksgiving_working"] else ""
     humidity = r["humidity"]
-    humid = (f"{tr_date(HUMID_SATURDAY)} Cumartesi ağlarda hata sıralamasında ancak {r['humid_saturday_net_rank']}. sırada; "
+    humid = (f"{tr_date(HUMID_SATURDAY)} Cumartesi durumu kullanan hiçbir ağın hata payı en büyük {r['humid_saturday_net_rank'] - 1} günü arasında değil; "
              f"{best_label} ise gerçeğin {pct(r['humid_saturday_ratio'])} kadarını tahmin ediyor. O gün nem ortalaması {pct(humidity['humidity'])} ve yağmur yok. Modelin öğrendiği aylarda nemi {pct(HUMID)} ve üstü olan "
             f"saatlerin {pct(humidity['humid_wet'])} kadarı yağmurlu; ağaçlar yüksek nemi düşük talep diye öğrenmiş. Nemi öğrendiği "
             f"{MONTHS_TR[pd.Timestamp(HUMID_SATURDAY).month - 1]} saatlerinin medyanına ({pct(humidity['typical'])}) çekince tahmin {number(humidity['predicted'])} kiralamadan "
@@ -487,7 +496,7 @@ Kaynak: {link(data.SOURCE_URL)}. {e("Atıf: " + CITATION + ".")}</p>
     p4 = f"""
 <h2>7. Hata analizi</h2>
 {figure("sonuc_tahmin", "Şekil 7. Test aylarından iki hafta: gerçek ve tahmin; pembe bant kayıt olmayan saatler.")}
-<p>{e(f"Şekil 7: günlük iki tepe ve hafta sonu eğrisi iyi yakalanıyor; hata tepe saatlerin yüksekliğinde. Sandy'nin {tr_date(SANDY[0])} gününde yalnız {sandy_first} saat, {tr_date(SANDY[1])} gününde {sandy_second} saat kayıt var; sistem kapalıydı. {tr_date(SANDY[1])} gününün kayıtlı saatlerinde {best_label} gerçeğin {number(r['after_sandy_ratio'], 1)} katını tahmin ediyor, çünkü hiçbir girdi kasırgayı bilmiyor.")}</p>
+<p>{e(f"Şekil 7: günlük iki tepe ve hafta sonu eğrisi iyi yakalanıyor; hata tepe saatlerin yüksekliğinde. Sandy'nin {tr_date(SANDY[0])} gününde yalnız {sandy_first} saat, {tr_date(SANDY[1])} gününde {sandy_second} saat kayıt var; öteki saatler veride yok. {tr_date(SANDY[1])} gününün kayıtlı saatlerinde {best_label} gerçeğin {number(r['after_sandy_ratio'], 1)} katını tahmin ediyor, çünkü hiçbir girdi kasırgayı bilmiyor.")}</p>
 {worst_table(predictions, best)}
 <p class="note">{e(f"{best_label} modelinin karesel log hatasında en büyük payı olan test günleri. Hatadaki pay: o günün hatasının toplam hataya oranı.")}</p>
 <p>{e(f"Noel'in üç günü ({christmas_span}) {best_label} modelinin toplam karesel log hatasının {pct(r['christmas_share'])} payını tek başına taşıyor. Veride {christmas_days} Aralık iş günü görünüyor; eğitim aylarında iş gününe denk gelen bir Noel arifesi yok. Model bu günleri sıradan bir iş günü sanıp gerçeğin {number(min(ratios), 1)} ile {number(max(ratios), 1)} katını tahmin ediyor. {christmas_day}")}</p>
@@ -512,7 +521,7 @@ Kaynak: {link(data.SOURCE_URL)}. {e("Atıf: " + CITATION + ".")}</p>
         e("Log ölçeğinde öğrenilen tahmin sayıya çevrilince medyana yakın kalır, ortalamayı biraz düşük tahmin eder; bütün modellerde aynı, karşılaştırmayı bozmuyor."),
     ])}
 <h3>Geliştirme önerileri</h3>{bullets([
-        e("Takvime fiilî izin günlerini (Noel arifesi, Şükran Günü ertesi, Noel ile yılbaşı arası) eklemek; en büyük hataların kaynağı bunlar."),
+        e(f"Takvime fiilî izin günlerini (Noel arifesi, Şükran Günü ertesi) eklemek; bu iki gün {best_label} hatasının {pct(r['leave_share'])} payını taşıyor."),
         e("Kısa vadeli tahmin için önceki saatlerin kiralama sayılarını (gecikmeli değerler) girdi yapmak."),
         e(f"Durumun daha zengin olduğu bir problemde (etkinlikler, istasyon bazında veri) FiLM'i yeniden denemek; durum burada {len(data.STATE_NAMES)} sütun."),
         e("Tek sayı yerine aralık tahmini (quantile kaybı) ile filo planına güven payı vermek."),

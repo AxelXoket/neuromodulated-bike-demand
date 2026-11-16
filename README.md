@@ -23,7 +23,7 @@ Test dönemi Ekim-Aralık 2012. Ağlarda 10 seed ortalaması.
 
 - Durum bilgisi belirleyici: durum girdide eksi durumsuz RMSLE farkı -0,223, %95 aralığı [-0,271; -0,175].
 - Durumun ağa nasıl girdiği önemli çıkmadı: FiLM eksi durum girdide +0,002 [-0,009; +0,012], FiLM eksi yalnız kaydırma +0,001 [-0,007; +0,010]. İki aralık da sıfırı içeriyor; FiLM hipotezim bu veride desteklenmedi.
-- En düşük test RMSLE'si Gradient boosting'in, ama durum girdide ağıyla farkı -0,004 [-0,024; +0,016]; ikisi ayırt edilemiyor. En büyük hatalar Noel'in üç gününde (veride 24 ve 26 Aralık iş günü), başkanlık seçimi gecesinin ertesinde (7 Kasım) ve çok nemli ama kuru bir Cumartesi'de (8 Aralık). Nedenleri raporun 7. bölümünde.
+- En düşük test RMSLE'si Gradient boosting'in, ama durumu girdiye ekleyen ağla farkı -0,004 [-0,024; +0,016]; ikisi ayırt edilemiyor. En büyük hatalar Noel'in üç gününde (veride 24 ve 26 Aralık iş günü), başkanlık seçimi gecesinin ertesinde (7 Kasım) ve çok nemli ama kuru bir Cumartesi'de (8 Aralık). Nedenleri raporun 7. bölümünde.
 
 Aralıklar iki seviyeli eşleştirilmiş bootstrap ile (10.000 tekrar): her turda seed'ler ve 92 test günü yeniden çekiliyor, iki model için aynı.
 
@@ -58,7 +58,7 @@ Betik sırayla `python -m bike_demand.train`, `tools/figures.py`, `tools/build_r
 
 ## Testler
 
-İki şerit var. `tests/` kapı testleridir: ağ yok, yaklaşık 2,5 saniye (bunun 0,75 saniyesi torch'un ilk optimizer'da yaptığı tek seferlik yükleme); her commit'ten önce koşar. `slow_tests/` gerçek eğitim döngülerini, rapordaki nem karşı olgusunu ve başsız Edge'i dener, yaklaşık 6 saniye sürer.
+İki şerit var. `tests/` kapı testleridir: ağ yok; testlerin kendisi yaklaşık 2,7 saniye (bunun 0,75 saniyesi torch'un ilk optimizer'da yaptığı tek seferlik yükleme), Python ve torch'un açılışıyla birlikte yaklaşık 6 saniye; her commit'ten önce koşar. `slow_tests/` gerçek eğitim döngülerini, rapordaki nem karşı olgusunu ve başsız Edge'i dener, yaklaşık 6 saniye sürer.
 
 ```bash
 python -B -m unittest discover -s tests -t .
@@ -71,7 +71,7 @@ python -B -m unittest discover -s slow_tests -t .
 - `test_data.py`: sızıntı yapan sütunlar hiçbir girdiye ulaşmıyor, zaman bölmesi, ölçeklemenin yalnız eğitim aylarından gelmesi (sonraki aylar bozulunca değişmiyor), x ve s'nin ayrık olması, eksik saat ve aykırı değer sayımı.
 - `test_models.py`: durumun nereye girdiği, FiLM ve kaydırma ağlarının durumsuz ağ olarak başlaması, ölçekleme ve kaydırmanın elle hesaplanan değeri, eşit parametre sayısı.
 - `test_train.py`: metrikler, bootstrap'ın tek günden ya da tek seed'den gelen farka güvenmemesi, her ağın aynı seed'de aynı batch sırasını görmesi.
-- `test_results.py`: `results/` kendi içinde tutarlı; her seed'in metrikleri kayıtlı tahminlerden yeniden hesaplanıyor; şekillerde sayılar Türkçe biçimde.
+- `test_results.py`: `results/` kendi içinde tutarlı; her seed'in metrikleri kayıtlı tahminlerden yeniden hesaplanıyor; şekillerde sayılar Türkçe biçimde; Segoe UI olmayan makinede (Colab) şekiller uyarısız DejaVu Sans ile çiziliyor.
 - `test_report.py`, `test_notebook.py`: raporun sayfa sayısı, bağlantıları, sayıların sonuç dosyasından gelmesi, satır sonu kuralları; not defterinin hatasız çalışmış olması; yeniden üretim betiğinin hata veren adımda durması.
 - `test_text_hygiene.py`: depodaki her metin dosyasında uzun tire, yasaklı üslup kelimesi ve CRLF yok. UCI veri dosyası yayımlandığı haliyle, bayt bayt saklanıyor.
 - `slow_tests/test_training.py`: erken durdurmanın en iyi epoch'u geri getirmesi, sabır sınırı, aynı seed'in aynı koşuyu vermesi, sabit epoch'lu yeniden eğitim, ayar seçimi, FiLM'in durumla tersine dönen bir kuralı öğrenmesi.

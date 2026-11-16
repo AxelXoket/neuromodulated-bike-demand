@@ -72,6 +72,24 @@ class TheReport(unittest.TestCase):
                and re.match(r"[a-zçğıöşü]", b) and not re.match(r"Şekil|\d", a)]
         self.assertEqual(cut, [])
 
+    def test_the_leave_day_suggestion_cites_the_share_of_the_two_days_it_names(self):
+        predictions = pd.read_csv(ROOT / "results" / "predictions.csv", parse_dates=["time"])
+        best = build_report.best_on_validation(METRICS)
+        share = build_report.share_of_days(predictions, best, [build_report.CHRISTMAS[0], build_report.AFTER_THANKSGIVING])
+        sentence = re.search(r"fiilî izin günlerini \(Noel arifesi, Şükran Günü ertesi\) eklemek; bu iki gün (.+?) hatasının (%\d+) payını",
+                             flat(self.text))
+        self.assertIsNotNone(sentence)
+        self.assertEqual(sentence.groups(), (LABELS[best], build_report.pct(share)))
+
+    def test_the_humid_saturday_count_holds_for_every_net_that_uses_the_state(self):
+        predictions = pd.read_csv(ROOT / "results" / "predictions.csv", parse_dates=["time"])
+        found = re.search(r"durumu kullanan hiçbir ağın hata payı en büyük (\d+) günü arasında değil", flat(self.text))
+        self.assertIsNotNone(found)
+        ahead = int(found.group(1))
+        self.assertGreater(ahead, 0)
+        ranks = [build_report.day_rank(predictions, kind, build_report.HUMID_SATURDAY) for kind in ("concat", "shift", "film")]
+        self.assertEqual(min(ranks), ahead + 1)
+
     def test_no_paragraph_ends_on_a_line_with_a_single_word(self):
         """A paragraph here is a block whose lines sit one under another from the same left edge; cells side by side in
         a table row are not one."""
@@ -186,6 +204,19 @@ class Helpers(unittest.TestCase):
         self.assertAlmostEqual(build_report.day_ratio(predictions, "m", "2012-12-02"), 3.0)
         ranks = [build_report.day_rank(predictions, "m", day) for day in ("2012-12-01", "2012-12-02", "2012-12-03")]
         self.assertEqual(ranks, [3, 1, 2])
+
+    def test_the_humid_rank_is_the_best_place_over_the_nets_and_stops_at_first_place(self):
+        time = pd.date_range("2012-12-01", periods=72, freq="h")
+        actual = np.full(72, 100.0)
+        first, second = actual.copy(), actual.copy()
+        first[24:48], first[48:72] = 300.0, 150.0  # its days from worst: 2, 3, 1
+        second[0:24], second[24:48], second[48:72] = 300.0, 150.0, 120.0  # 1, 2, 3
+        frame = pd.DataFrame({"time": time, "cnt": actual, "first": first, "second": second})
+        with mock.patch.object(build_report, "HUMID_SATURDAY", "2012-12-03"):
+            self.assertEqual(build_report.humid_rank(frame, ["first", "second"]), 2)
+            self.assertEqual(build_report.humid_rank(frame, ["second"]), 3)
+        with mock.patch.object(build_report, "HUMID_SATURDAY", "2012-12-02"), self.assertRaises(SystemExit):
+            build_report.humid_rank(frame, ["first", "second"])
 
     def test_the_conclusion_follows_the_interval_and_names_the_best_model(self):
         unclear = {"mean": 0.002, "low": -0.009, "high": 0.012}

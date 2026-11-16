@@ -181,5 +181,88 @@ class TickLabels(unittest.TestCase):
         self.assertTrue(all(re.fullmatch(r"\d\d\.10", label) for label in shown), shown)
 
 
+class FontChoice(unittest.TestCase):
+    """The figures ask only for installed fonts, so a machine without the report font (Colab) draws with no warning."""
+
+    @staticmethod
+    def warnings_when_drawn(family: list) -> list:
+        import logging
+
+        import matplotlib.pyplot as plt
+        records = []
+        handler = logging.Handler(level=logging.WARNING)
+        handler.emit = records.append
+        logger = logging.getLogger("matplotlib.font_manager")
+        logger.addHandler(handler)
+        try:
+            with plt.rc_context({"font.family": family}):
+                figure, ax = plt.subplots()
+                ax.set_title("Saatlik kiralama")
+                figure.canvas.draw()
+                plt.close(figure)
+        finally:
+            logger.removeHandler(handler)
+        return [record.getMessage() for record in records]
+
+    def test_a_missing_report_font_is_left_out_and_drawing_logs_no_warning(self):
+        import uuid
+        from unittest import mock
+
+        import matplotlib.font_manager as font_manager
+
+        import figures
+        installed = {font.name for font in font_manager.fontManager.ttflist}
+        missing = f"Missing {uuid.uuid4().hex}"
+        with mock.patch.object(figures, "PREFERRED_FONT", missing):
+            family = figures.font_family(installed)
+        self.assertEqual(family, [figures.FALLBACK_FONT])
+        self.assertEqual(self.warnings_when_drawn(family), [])
+        self.assertNotEqual(self.warnings_when_drawn([missing, figures.FALLBACK_FONT]), [])  # the warning avoided
+
+    def test_an_installed_report_font_comes_first_and_the_figures_use_the_choice(self):
+        import matplotlib.font_manager as font_manager
+        import matplotlib.pyplot as plt
+
+        import figures
+        both = {figures.PREFERRED_FONT, figures.FALLBACK_FONT}
+        self.assertEqual(figures.font_family(both), [figures.PREFERRED_FONT, figures.FALLBACK_FONT])
+        installed = {font.name for font in font_manager.fontManager.ttflist}
+        self.assertEqual(plt.rcParams["font.family"], figures.font_family(installed))
+
+
+    def test_on_a_machine_without_the_report_font_the_module_picks_only_the_bundled_one(self):
+        import importlib
+        from unittest import mock
+
+        import matplotlib.font_manager as font_manager
+        import matplotlib.pyplot as plt
+
+        import figures
+        without = [font for font in font_manager.fontManager.ttflist if font.name != figures.PREFERRED_FONT]
+        try:
+            with plt.rc_context(), mock.patch.object(font_manager.fontManager, "ttflist", without):
+                reloaded = importlib.reload(figures)
+                self.assertEqual(plt.rcParams["font.family"], [reloaded.FALLBACK_FONT])
+        finally:
+            importlib.reload(figures)
+
+
+class AxisLabels(unittest.TestCase):
+    def test_both_panels_of_the_distribution_name_what_they_count(self):
+        import tempfile
+        from unittest import mock
+
+        import figures
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(figures, "FIGURES", pathlib.Path(tmp)), \
+                mock.patch.object(figures.plt, "close"):
+            figures.distribution(data.load())
+            figure = figures.plt.gcf()
+        try:
+            self.assertEqual([ax.get_ylabel() for ax in figure.axes], ["Saat sayısı", "Saat sayısı"])
+            self.assertTrue(all(ax.get_xlabel() for ax in figure.axes))
+        finally:
+            figures.plt.close(figure)
+
+
 if __name__ == "__main__":
     unittest.main()

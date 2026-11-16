@@ -10,6 +10,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.dates as mdates  # noqa: E402
+import matplotlib.font_manager as font_manager  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import matplotlib.ticker as ticker  # noqa: E402
 import numpy as np  # noqa: E402
@@ -34,7 +35,16 @@ EVENTS = (("2012-10-29", "Sandy kasırgası", ("2012-10-16", 1500)), ("2012-12-2
 NUMERIC_LABEL = re.compile(r"-?\d+(?:\.\d+)?")
 MINUS_SIGN = chr(0x2212)  # matplotlib prints negative ticks with the minus sign, not a hyphen
 
-plt.rcParams.update({"font.family": ["Segoe UI", "DejaVu Sans"], "font.size": 9, "axes.edgecolor": MUTED, "axes.labelcolor": INK,
+PREFERRED_FONT, FALLBACK_FONT = "Segoe UI", "DejaVu Sans"  # matplotlib ships DejaVu Sans; Colab has no Segoe UI
+
+
+def font_family(installed: set[str]) -> list[str]:
+    """The report font where it is installed, else only the bundled one: a missing name would log a warning per figure."""
+    return [PREFERRED_FONT, FALLBACK_FONT] if PREFERRED_FONT in installed else [FALLBACK_FONT]
+
+
+plt.rcParams.update({"font.family": font_family({font.name for font in font_manager.fontManager.ttflist}), "font.size": 9,
+                     "axes.edgecolor": MUTED, "axes.labelcolor": INK,
                      "xtick.color": MUTED, "ytick.color": MUTED, "axes.spines.top": False, "axes.spines.right": False,
                      "axes.grid": True, "grid.color": GRID, "grid.linewidth": 0.6, "legend.frameon": False})
 
@@ -87,7 +97,7 @@ def distribution(frame: pd.DataFrame) -> pathlib.Path:
     left.hist(frame["cnt"], bins=40, color=COLOURS["ridge"])
     left.set(xlabel="Saatlik kiralama", ylabel="Saat sayısı")
     right.hist(np.log1p(frame["cnt"]), bins=40, color=COLOURS["hgb"])
-    right.set(xlabel="log(1 + kiralama)")
+    right.set(xlabel="log(1 + kiralama)", ylabel="Saat sayısı")
     figure.tight_layout()
     return save(figure, "eda_dagilim")
 

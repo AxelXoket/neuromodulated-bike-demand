@@ -343,6 +343,48 @@
     "why": "dates are rewritten like numbers"
   },
   {
+    "file": "tools/figures.py",
+    "old": "return [PREFERRED_FONT, FALLBACK_FONT] if PREFERRED_FONT in installed else [FALLBACK_FONT]",
+    "new": "return [PREFERRED_FONT, FALLBACK_FONT]",
+    "lane": "fast",
+    "why": "a missing report font stays in the list and warns on Colab"
+  },
+  {
+    "file": "tools/figures.py",
+    "old": "return [PREFERRED_FONT, FALLBACK_FONT] if PREFERRED_FONT in installed else [FALLBACK_FONT]",
+    "new": "return [FALLBACK_FONT]",
+    "lane": "fast",
+    "why": "the report font is never used"
+  },
+  {
+    "file": "tools/figures.py",
+    "old": "\"font.family\": font_family({font.name for font in font_manager.fontManager.ttflist})",
+    "new": "\"font.family\": [PREFERRED_FONT, FALLBACK_FONT]",
+    "lane": "fast",
+    "why": "the figures skip the font check"
+  },
+  {
+    "file": "tools/figures.py",
+    "old": "right.set(xlabel=\"log(1 + kiralama)\", ylabel=\"Saat sayısı\")",
+    "new": "right.set(xlabel=\"log(1 + kiralama)\")",
+    "lane": "fast",
+    "why": "the right panel of figure 2 has no y label"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "rank = min(day_rank(predictions, kind, HUMID_SATURDAY) for kind in nets)",
+    "new": "rank = max(day_rank(predictions, kind, HUMID_SATURDAY) for kind in nets)",
+    "lane": "fast",
+    "why": "the humid Saturday rank takes the worst net"
+  },
+  {
+    "file": "tools/build_report.py",
+    "old": "    if rank < 2:\n",
+    "new": "    if rank < 1:\n",
+    "lane": "fast",
+    "why": "a net's worst day passes as 'none of the 0 worst days'"
+  },
+  {
     "file": "tools/build_report.py",
     "old": "escaped = LAST_SPACE.sub(\"&nbsp;\", escaped)",
     "new": "escaped = escaped",
